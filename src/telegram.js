@@ -83,7 +83,7 @@ function formatSLHit(s, price) {
 
 async function notifySignal(signal) {
   if (!bot || !channelId) return;
-  if (!['HIGH', 'MEDIUM'].includes(signal.confluence_level)) return;
+  if (!['HIGH', 'MEDIUM', 'LOW'].includes(signal.confluence_level)) return;
   try { await bot.sendMessage(channelId, formatSignalFull(signal), { parse_mode: 'HTML' }); } catch (e) { console.error('[TG Send]', e.message); }
 }
 
