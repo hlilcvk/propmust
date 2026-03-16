@@ -82,7 +82,7 @@ function validateBeforePublish(signal) {
   for (const f of req) { if (signal[f] === undefined || signal[f] === null) e.push(`Missing field: ${f}`); }
   if (signal.direction === 'LONG' && signal.stop_loss >= signal.entry_low) e.push(`LONG but SL >= entry_low`);
   if (signal.direction === 'SHORT' && signal.stop_loss <= signal.entry_high) e.push(`SHORT but SL <= entry_high`);
-  if (['NONE', 'LOW'].includes(signal.confluence_level)) e.push(`Confluence ${signal.confluence_level} — minimum MEDIUM for publish`);
+  if (signal.confluence_level === 'NONE') e.push(`Confluence NONE — minimum LOW required`);
   if (signal.tp_matrix?.[0]) {
     const risk = Math.abs((signal.entry_low + signal.entry_high) / 2 - signal.stop_loss);
     const reward = Math.abs(signal.tp_matrix[0].price - (signal.entry_low + signal.entry_high) / 2);

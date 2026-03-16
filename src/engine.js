@@ -133,6 +133,37 @@ function calcLevelStats(arr) {
   return { total: arr.length, wins: w.length, winRate: (w.length / arr.length * 100).toFixed(1) };
 }
 
+// ── CORRELATION MATRIX ──
+let _corrCycle = 0;
+function buildCorrMatrix(snapshots) {
+  if (!snapshots || snapshots.length < 10) return {};
+  const matrix = {};
+  const btcSeries = snapshots.map(s => s.data?.['BTCUSDT']).filter(p => p > 0);
+  if (btcSeries.length < 5) return {};
+  const allSyms = Object.keys(snapshots[snapshots.length - 1].data || {});
+  for (const sym of allSyms) {
+    if (sym === 'BTCUSDT') continue;
+    const symSeries = snapshots.map(s => s.data?.[sym]).filter(p => p > 0);
+    const n = Math.min(btcSeries.length, symSeries.length);
+    if (n < 5) continue;
+    const btc = btcSeries.slice(-n), alt = symSeries.slice(-n);
+    const btcRet = btc.slice(1).map((p, i) => (p - btc[i]) / btc[i]);
+    const altRet = alt.slice(1).map((p, i) => (p - alt[i]) / alt[i]);
+    const n2 = Math.min(btcRet.length, altRet.length);
+    const bR = btcRet.slice(-n2), aR = altRet.slice(-n2);
+    const bMean = bR.reduce((a, b) => a + b, 0) / n2;
+    const aMean = aR.reduce((a, b) => a + b, 0) / n2;
+    let num = 0, dB = 0, dA = 0;
+    for (let i = 0; i < n2; i++) {
+      const db = bR[i] - bMean, da = aR[i] - aMean;
+      num += db * da; dB += db * db; dA += da * da;
+    }
+    const denom = Math.sqrt(dB * dA);
+    matrix[sym] = { btc_corr: +(denom > 0 ? Math.max(-1, Math.min(1, num / denom)) : 0).toFixed(3), normal_corr: 0.75 };
+  }
+  return matrix;
+}
+
 // ── MAIN ENGINE ──
 async function generateSignal(symbol, snapshots, corrMatrix) {
   const t = tickers.get(symbol);
@@ -230,15 +261,24 @@ async function runEngine(supabase) {
   const snap = takePriceSnapshot();
   if (Object.keys(snap).length > 0) await supabase.from('price_snapshots').insert({ data: snap });
 
-  // Correlation matrix
+  // Correlation matrix — recompute every 5 cycles, save to DB
   let corrMatrix = {};
   const { data: corrRow } = await supabase.from('correlation_matrix').select('matrix').order('ts', { ascending: false }).limit(1).single().catch(() => ({ data: null }));
   if (corrRow) corrMatrix = corrRow.matrix;
+  _corrCycle++;
+  if (_corrCycle % 5 === 1 && snapshots.length >= 10) {
+    corrMatrix = buildCorrMatrix(snapshots);
+    if (Object.keys(corrMatrix).length > 0) {
+      await supabase.from('correlation_matrix').insert({ matrix: corrMatrix }).catch(() => {});
+      console.log(`[Engine] Corr matrix updated: ${Object.keys(corrMatrix).length} symbols`);
+    }
+  }
 
   const signals = [];
   for (const sym of trackedSymbols()) {
     const sig = await generateSignal(sym, snapshots, corrMatrix);
     if (sig && !sig._blocked) signals.push(sig);
+    else if (sig?._blocked) console.log(`[BLOCKED] ${sym}: ${sig._blockReasons?.join(', ')}`);
   }
   signals.sort((a, b) => b.panel_rank_score - a.panel_rank_score);
 

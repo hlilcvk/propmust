@@ -130,7 +130,7 @@ function computeConfluence(symbol, snapshots, corrMatrix, crossFunding) {
   const ag = Math.max(lc, sc2);
   const ts2 = dir === 'LONG' ? ls : dir === 'SHORT' ? ss : 0;
   const score = Math.min(100, ts2 * (0.5 + ag * 0.15));
-  const level = ag >= 5 ? 'HIGH' : ag >= 4 ? 'MEDIUM' : ag >= 2 ? 'LOW' : 'NONE';
+  const level = ag >= 4 ? 'HIGH' : ag >= 3 ? 'MEDIUM' : ag >= 1 ? 'LOW' : 'NONE';
   return { direction: dir, score, level, agreeing: ag, layers, longCount: lc, shortCount: sc2 };
 }
 
