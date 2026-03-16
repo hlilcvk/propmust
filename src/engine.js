@@ -216,6 +216,11 @@ async function generateSignal(symbol, snapshots, corrMatrix) {
   const entry_high = direction === 'LONG' ? t.price + entryHalf * 0.5 : t.price + entryHalf;
   const entry_distance_pct = Math.abs(t.price - (entry_low + entry_high) / 2) / t.price * 100;
 
+  // Clamp stop loss to ensure it's outside the entry zone
+  let sl = stopLoss;
+  if (direction === 'LONG' && sl >= entry_low) sl = entry_low - atr * 0.3;
+  if (direction === 'SHORT' && sl <= entry_high) sl = entry_high + atr * 0.3;
+
   let opp = 50;
   opp += confluence.agreeing * 8;
   if (structure.trend === (direction === 'LONG' ? 'BULLISH' : 'BEARISH')) opp += 10;
@@ -232,7 +237,7 @@ async function generateSignal(symbol, snapshots, corrMatrix) {
     opportunity_score: opp, confluence_score: confluence.score,
     confluence_level: confluence.level, confluence_agreeing: confluence.agreeing,
     confluence_layers: confluence.layers,
-    entry_low, entry_high, stop_loss: stopLoss, entry_distance_pct,
+    entry_low, entry_high, stop_loss: sl, entry_distance_pct,
     tp_matrix: tpMatrix,
     whale_score: 0, whale_side: 'NEUTRAL',
     freshness: 100, discovery_score: Math.max(0, 80 - Math.abs(t.ch || 0) * 3),
