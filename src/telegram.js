@@ -7,7 +7,7 @@ let channelId = null;
 let adminId = null;
 let _supabase = null;
 
-function initTelegram(supabase) {
+async function initTelegram(supabase) {
   _supabase = supabase;
   const cfg = settings.load();
   const token = cfg.telegram_bot_token || process.env.TELEGRAM_BOT_TOKEN;
@@ -17,11 +17,17 @@ function initTelegram(supabase) {
   if (!token) { console.log('[Telegram] No token — go to /admin to configure'); return null; }
 
   // Stop existing bot before re-init
-  if (bot) { try { bot.stopPolling(); } catch (e) {} bot = null; }
+  if (bot) {
+    try { await bot.stopPolling(); } catch (e) {}
+    bot = null;
+    await new Promise(r => setTimeout(r, 1000));
+  }
 
   try {
     const TelegramBot = require('node-telegram-bot-api');
-    bot = new TelegramBot(token, { polling: true });
+    bot = new TelegramBot(token, { polling: { autoStart: false } });
+    await bot.deleteWebhook();
+    bot.startPolling();
 
     bot.onText(/\/signals/, async (msg) => {
       const { data } = await _supabase.from('signals').select('symbol,direction,state,confluence_level,opportunity_score').neq('state', 'INVALIDATED').order('panel_rank_score', { ascending: false }).limit(10);
@@ -48,7 +54,7 @@ function initTelegram(supabase) {
   } catch (e) { console.error('[Telegram] Init error:', e.message); return null; }
 }
 
-function reinitTelegram() {
+async function reinitTelegram() {
   if (_supabase) return initTelegram(_supabase);
   console.log('[Telegram] Cannot reinit — no supabase client');
   return null;
