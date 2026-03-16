@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROPTREX — Admin Panel</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0f;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #1e1e2e;
+  }
+  header .logo {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #7c6af7;
+  }
+  header .subtitle {
+    font-size: 13px;
+    color: #555;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1000px;
+  }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #111118;
+    border: 1px solid #1e1e2e;
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card h2 {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #7c6af7;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card h2 .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #333;
+    display: inline-block;
+  }
+  .card h2 .dot.green { background: #22c55e; box-shadow: 0 0 6px #22c55e88; }
+  .card h2 .dot.red   { background: #ef4444; box-shadow: 0 0 6px #ef444488; }
+  .card h2 .dot.yellow { background: #eab308; box-shadow: 0 0 6px #eab30888; }
+  label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 6px;
+    margin-top: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    background: #0d0d14;
+    border: 1px solid #252535;
+    border-radius: 8px;
+    color: #e0e0e0;
+    font-size: 13px;
+    font-family: 'Consolas', monospace;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: #7c6af7; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 18px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: #7c6af7; color: #fff; }
+  .btn-secondary { background: #1e1e2e; color: #aaa; }
+  .btn-danger { background: #7f1d1d; color: #fca5a5; }
+  .btn-success { background: #14532d; color: #86efac; }
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.ok { background: #14532d; color: #86efac; border: 1px solid #166534; }
+  .toast.err { background: #7f1d1d; color: #fca5a5; border: 1px solid #991b1b; }
+  .status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+  .status-text { font-size: 12px; color: #555; }
+  .status-text.ok { color: #22c55e; }
+  .status-text.err { color: #ef4444; }
+  .divider { border: none; border-top: 1px solid #1e1e2e; margin: 16px 0; }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid #1a1a2a;
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: #555; }
+  .info-val { color: #aaa; font-family: monospace; }
+  .eye-btn {
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 4px;
+    vertical-align: middle;
+  }
+  .eye-btn:hover { color: #aaa; }
+  .input-wrap { position: relative; display: flex; align-items: center; }
+  .input-wrap input { padding-right: 32px; }
+  .input-wrap .eye-btn { position: absolute; right: 8px; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">⬡ PROPTREX</div>
+    <div class="subtitle">Admin Panel</div>
+  </div>
+</header>
+
+<div class="grid">
+
+  <!-- Database Card -->
+  <div class="card">
+    <h2><span class="dot" id="db-dot"></span> Database</h2>
+
+    <label>PostgreSQL Connection URL</label>
+    <div class="input-wrap">
+      <input type="password" id="database_url" placeholder="postgres://user:pass@host:5432/db">
+      <button class="eye-btn" onclick="toggleVis('database_url')">👁</button>
+    </div>
+
+    <div class="status-row" style="margin-top:10px">
+      <span class="status-text" id="db-status">checking...</span>
+      <button class="btn btn-secondary" style="margin-top:0;padding:6px 12px;font-size:12px" onclick="testDb()">Test Connection</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveDb()">Save Database Settings</button>
+    </div>
+  </div>
+
+  <!-- Telegram Card -->
+  <div class="card">
+    <h2><span class="dot" id="tg-dot"></span> Telegram Bot</h2>
+
+    <label>Bot Token</label>
+    <div class="input-wrap">
+      <input type="password" id="telegram_bot_token" placeholder="123456:ABCdef...">
+      <button class="eye-btn" onclick="toggleVis('telegram_bot_token')">👁</button>
+    </div>
+
+    <label>Channel ID</label>
+    <input type="text" id="telegram_channel_id" placeholder="-100123456789">
+
+    <label>Admin User ID</label>
+    <input type="text" id="telegram_admin_id" placeholder="123456789">
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveTelegram()">Save Telegram Settings</button>
+      <button class="btn btn-success" onclick="restartBot()">Restart Bot</button>
+    </div>
+
+    <hr class="divider">
+    <div id="tg-status-info">
+      <div class="info-row">
+        <span class="info-label">Bot Status</span>
+        <span class="info-val" id="tg-active">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Channel</span>
+        <span class="info-val" id="tg-channel">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Admin ID</span>
+        <span class="info-val" id="tg-admin">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Status Card -->
+  <div class="card">
+    <h2>System Status</h2>
+    <div id="sys-info">
+      <div class="info-row">
+        <span class="info-label">Server Uptime</span>
+        <span class="info-val" id="sys-uptime">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">WS Clients</span>
+        <span class="info-val" id="sys-clients">—</span>
+      </div>
+    </div>
+    <button class="btn btn-secondary" style="margin-top:14px" onclick="loadHealth()">Refresh</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+async function load() {
+  try {
+    const r = await fetch('/admin/api/settings');
+    const cfg = await r.json();
+    if (cfg.database_url) document.getElementById('database_url').value = cfg.database_url;
+    if (cfg.telegram_bot_token) document.getElementById('telegram_bot_token').value = cfg.telegram_bot_token;
+    if (cfg.telegram_channel_id) document.getElementById('telegram_channel_id').value = cfg.telegram_channel_id;
+    if (cfg.telegram_admin_id) document.getElementById('telegram_admin_id').value = cfg.telegram_admin_id;
+  } catch (e) { showToast('Failed to load settings', 'err'); }
+
+  loadDbStatus();
+  loadTgStatus();
+  loadHealth();
+}
+
+async function saveDb() {
+  const val = document.getElementById('database_url').value.trim();
+  if (!val) return showToast('Enter a database URL', 'err');
+  const r = await fetch('/admin/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ database_url: val }) });
+  const j = await r.json();
+  if (j.ok) { showToast('Database URL saved — restart server to apply', 'ok'); }
+  else showToast('Save failed: ' + j.error, 'err');
+}
+
+async function saveTelegram() {
+  const body = {
+    telegram_bot_token: document.getElementById('telegram_bot_token').value.trim(),
+    telegram_channel_id: document.getElementById('telegram_channel_id').value.trim(),
+    telegram_admin_id: document.getElementById('telegram_admin_id').value.trim(),
+  };
+  const r = await fetch('/admin/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (j.ok) showToast('Telegram settings saved', 'ok');
+  else showToast('Save failed: ' + j.error, 'err');
+}
+
+async function restartBot() {
+  const r = await fetch('/admin/api/telegram/restart', { method: 'POST' });
+  const j = await r.json();
+  if (j.ok) { showToast('Bot restarted', 'ok'); loadTgStatus(); }
+  else showToast('Restart failed: ' + j.error, 'err');
+}
+
+async function testDb() {
+  document.getElementById('db-status').textContent = 'testing...';
+  document.getElementById('db-status').className = 'status-text';
+  const r = await fetch('/admin/api/db/status');
+  const j = await r.json();
+  const dot = document.getElementById('db-dot');
+  const txt = document.getElementById('db-status');
+  if (j.connected) {
+    dot.className = 'dot green';
+    txt.textContent = 'Connected';
+    txt.className = 'status-text ok';
+  } else {
+    dot.className = 'dot red';
+    txt.textContent = j.error || 'Disconnected';
+    txt.className = 'status-text err';
+  }
+}
+
+async function loadDbStatus() { testDb(); }
+
+async function loadTgStatus() {
+  try {
+    const r = await fetch('/admin/api/telegram/status');
+    const j = await r.json();
+    const dot = document.getElementById('tg-dot');
+    dot.className = 'dot ' + (j.active ? 'green' : 'red');
+    document.getElementById('tg-active').textContent = j.active ? '🟢 Online' : '🔴 Offline';
+    document.getElementById('tg-channel').textContent = j.channelId || '—';
+    document.getElementById('tg-admin').textContent = j.adminId || '—';
+  } catch (e) {}
+}
+
+async function loadHealth() {
+  try {
+    const r = await fetch('/api/health');
+    const j = await r.json();
+    document.getElementById('sys-uptime').textContent = Math.floor(j.uptime) + 's';
+    document.getElementById('sys-clients').textContent = j.clients;
+  } catch (e) {}
+}
+
+function toggleVis(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+let toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type === 'ok' ? 'ok' : 'err');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+load();
+setInterval(loadTgStatus, 10000);
+setInterval(loadHealth, 15000);
+</script>
+</body>
+</html>

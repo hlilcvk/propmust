@@ -1,0 +1,21 @@
+{
+  "name": "proptrex-backend",
+  "version": "1.0.0",
+  "description": "PROPTREX Signal Engine — 11 agents, 7 exchanges, persistent state",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node test/test-all.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "ws": "^8.18.0",
+    "pg": "^8.13.0",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.66.0",
+    "twitter-api-v2": "^1.17.0"
+  }
+}
