@@ -45,14 +45,25 @@ function prioritize(levels) {
 }
 
 function clampByHigherTF(tps, allLevels, direction) {
-  const barriers = allLevels.filter(l => (TF_WEIGHT[l.tf] || 0) >= 3);
-  if (!barriers.length) return tps;
-  const barrier = barriers[0];
-  return tps.map(tp => {
-    if (direction === 'LONG' && tp.price > barrier.price) return { ...tp, price: barrier.price * 0.997, clamped: true };
-    if (direction === 'SHORT' && tp.price < barrier.price) return { ...tp, price: barrier.price * 1.003, clamped: true };
-    return tp;
-  });
+  if (!tps.length) return tps;
+  const highTF = allLevels.filter(l => (TF_WEIGHT[l.tf] || 0) >= 3);
+  if (!highTF.length) return tps;
+
+  if (direction === 'LONG') {
+    // Only barriers ABOVE the last TP — highest resistance that caps the move
+    const lastTP = tps[tps.length - 1].price;
+    const caps = highTF.filter(l => l.price > lastTP).sort((a, b) => a.price - b.price);
+    if (!caps.length) return tps;
+    const cap = caps[0];
+    return tps.map(tp => tp.price > cap.price ? { ...tp, price: cap.price * 0.997, clamped: true } : tp);
+  } else {
+    // Only barriers BELOW the last TP — lowest support that caps the move
+    const lastTP = tps[tps.length - 1].price;
+    const caps = highTF.filter(l => l.price < lastTP).sort((a, b) => b.price - a.price);
+    if (!caps.length) return tps;
+    const cap = caps[0];
+    return tps.map(tp => tp.price < cap.price ? { ...tp, price: cap.price * 1.003, clamped: true } : tp);
+  }
 }
 
 function selectFinal(candidates, atr, price, direction) {

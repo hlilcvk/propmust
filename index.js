@@ -2,9 +2,23 @@
  * 11 agents wired together. Cron-scheduled. Deploy-ready. */
 
 require('dotenv').config();
+const fs   = require('fs');
+const path = require('path');
 const cron = require('node-cron');
-const { createClient } = require('./src/db');
+const { createClient, getPool } = require('./src/db');
 const settings = require('./src/settings');
+
+async function runMigrations() {
+  const pool = getPool();
+  if (!pool) return;
+  try {
+    const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+    await pool.query(sql);
+    console.log('[DB] Schema applied');
+  } catch (e) {
+    console.error('[DB] Migration error:', e.message);
+  }
+}
 const { runCollector, collectKlines, fetchOI, refreshSymbolList, discoverExchangeListings } = require('./src/collector');
 const { runEngine } = require('./src/engine');
 const { createServer } = require('./src/server');
@@ -34,6 +48,7 @@ async function main() {
   }
 
   const supabase = createClient(cfg.database_url);
+  await runMigrations();
 
   const { server, broadcast } = createServer(supabase);
   initTelegram(supabase);
