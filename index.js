@@ -70,7 +70,7 @@ async function main() {
       broadcast('signals', signals.slice(0, 50));
 
       for (const s of signals) {
-        if (s.state === 'EXECUTION' && !s.published_telegram && ['HIGH', 'MEDIUM'].includes(s.confluence_level)) {
+        if (!s.published_telegram && ['HIGH', 'MEDIUM', 'LOW'].includes(s.confluence_level)) {
           await notifySignal(s);
           await postSignalTweet(s);
           await supabase.from('signals').update({ published_telegram: true, published_x: s.confluence_level === 'HIGH' }).eq('signal_key', s.signal_key);
