@@ -25,9 +25,7 @@ async function initTelegram(supabase) {
 
   try {
     const TelegramBot = require('node-telegram-bot-api');
-    bot = new TelegramBot(token, { polling: { autoStart: false } });
-    await bot.deleteWebhook();
-    bot.startPolling();
+    bot = new TelegramBot(token, { polling: { interval: 2000, params: { timeout: 10 }, autoStart: true } });
 
     bot.onText(/\/signals/, async (msg) => {
       const { data } = await _supabase.from('signals').select('symbol,direction,state,confluence_level,opportunity_score').neq('state', 'INVALIDATED').order('panel_rank_score', { ascending: false }).limit(10);
